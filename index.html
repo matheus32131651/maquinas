@@ -46,6 +46,26 @@
             margin-bottom: 20px;
         }
 
+        /* Card de Destaque do Total de Máquinas */
+        .card-stat {
+            background: #2563eb;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .card-stat h3 {
+            font-size: 16px;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+
+        .card-stat .numero-total {
+            font-size: 42px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
         .form {
             display: flex;
             gap: 10px;
@@ -144,6 +164,12 @@
 
 <div class="container">
 
+    <!-- Card de Exibição da Quantidade de Máquinas Feitas -->
+    <div class="card card-stat">
+        <h3>Total de Máquinas Cadastradas</h3>
+        <div class="numero-total" id="totalMaquinas">0</div>
+    </div>
+
     <div class="card">
         <h2>Cadastrar P.A</h2>
         <br>
@@ -187,9 +213,8 @@
 </div>
 
 <script>
-    // CREDENCIAIS SUPABASE (Substitua pelos valores do seu projeto)
-    const SUPABASE_URL = "SUA_SUPABASE_URL";
-    const SUPABASE_KEY = "SUA_SUPABASE_KEY";
+    const SUPABASE_URL = "https://gnbibsmwtwiaqsmvicpp.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYmlic213dHdpYXFzbXZpY3BwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NjkzMjUsImV4cCI6MjEwNTA0NTMyNX0.B6MhI4WSdMXW-v0i9VeM-0lr8MR7fS4NPk6PVrhvDmE";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let registrosCache = [];
@@ -206,7 +231,6 @@
 
         registrosCache = data || [];
         
-        // Ordenação natural dos registros
         registrosCache.sort((a, b) =>
             a.numero_pa.localeCompare(b.numero_pa, undefined, { numeric: true })
         );
@@ -223,7 +247,6 @@
             return;
         }
 
-        // Verifica se já existe localmente antes de enviar para o banco
         const existe = registrosCache.some(item => item.numero_pa === numero);
         if (existe) {
             alert("Esse P.A já está registrado.");
@@ -268,8 +291,12 @@
             item.numero_pa.includes(pesquisa)
         );
 
+        // Atualiza o total de máquinas no topo
+        document.getElementById("totalMaquinas").innerText = registrosCache.length;
+
+        // Atualiza a contagem dos itens exibidos na pesquisa
         document.getElementById("contador").innerText =
-            "Total de P.A registrados: " + registrosCache.length;
+            "Total exibido: " + filtrados.length + " de " + registrosCache.length;
 
         if (filtrados.length === 0) {
             tabela.innerHTML = `
@@ -306,7 +333,6 @@
         }
     });
 
-    // Inicializa os dados vindos do Supabase ao abrir a página
     carregarDados();
 </script>
 
