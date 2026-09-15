@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Registro de P.A</title>
+
+    <!-- CDN do Client Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 
     <style>
         * {
@@ -143,31 +145,23 @@
 <div class="container">
 
     <div class="card">
-
         <h2>Cadastrar P.A</h2>
-
         <br>
-
         <div class="form">
             <input
                 type="text"
                 id="numeroPA"
                 placeholder="Ex: P.A 01 ou P.A 014"
             >
-
             <button class="btn-add" onclick="adicionarPA()">
                 Adicionar
             </button>
         </div>
-
     </div>
 
     <div class="card">
-
         <h2>Registros</h2>
-
         <br>
-
         <input
             class="search"
             type="text"
@@ -176,10 +170,9 @@
             onkeyup="mostrarPA()"
         >
 
-        <div class="contador" id="contador"></div>
+        <div class="contador" id="contador">Carregando dados...</div>
 
         <table>
-
             <thead>
                 <tr>
                     <th>Nº</th>
@@ -187,108 +180,98 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-
             <tbody id="listaPA"></tbody>
-
         </table>
-
     </div>
 
 </div>
 
 <script>
+    // CREDENCIAIS SUPABASE (Substitua pelos valores do seu projeto)
+    const SUPABASE_URL = "SUA_SUPABASE_URL";
+    const SUPABASE_KEY = "SUA_SUPABASE_KEY";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let registros = JSON.parse(
-        localStorage.getItem("registrosPA")
-    ) || [];
+    let registrosCache = [];
 
-    function adicionarPA() {
+    async function carregarDados() {
+        const { data, error } = await _supabase
+            .from('registros_pa')
+            .select('*');
 
+        if (error) {
+            alert("Erro ao carregar dados do banco: " + error.message);
+            return;
+        }
+
+        registrosCache = data || [];
+        
+        // Ordenação natural dos registros
+        registrosCache.sort((a, b) =>
+            a.numero_pa.localeCompare(b.numero_pa, undefined, { numeric: true })
+        );
+
+        mostrarPA();
+    }
+
+    async function adicionarPA() {
         const campo = document.getElementById("numeroPA");
-
-        let numero = campo.value.trim();
+        let numero = campo.value.trim().toUpperCase();
 
         if (numero === "") {
             alert("Digite o número do P.A.");
             return;
         }
 
-        // Padroniza para maiúsculo
-        numero = numero.toUpperCase();
-
-        // Verifica duplicidade
-        const existe = registros.some(
-            pa => pa === numero
-        );
-
+        // Verifica se já existe localmente antes de enviar para o banco
+        const existe = registrosCache.some(item => item.numero_pa === numero);
         if (existe) {
             alert("Esse P.A já está registrado.");
             return;
         }
 
-        registros.push(numero);
+        const { error } = await _supabase
+            .from('registros_pa')
+            .insert([{ numero_pa: numero }]);
 
-        // Ordena os registros
-        registros.sort((a, b) =>
-            a.localeCompare(b, undefined, {
-                numeric: true
-            })
-        );
-
-        salvar();
-
-        campo.value = "";
-
-        mostrarPA();
-    }
-
-    function excluirPA(index) {
-
-        const confirmacao = confirm(
-            "Deseja realmente excluir este P.A?"
-        );
-
-        if (!confirmacao) {
-            return;
+        if (error) {
+            alert("Erro ao salvar no banco: " + error.message);
+        } else {
+            campo.value = "";
+            await carregarDados();
         }
-
-        registros.splice(index, 1);
-
-        salvar();
-
-        mostrarPA();
     }
 
-    function salvar() {
+    async function excluirPA(id) {
+        const confirmacao = confirm("Deseja realmente excluir este P.A?");
+        if (!confirmacao) return;
 
-        localStorage.setItem(
-            "registrosPA",
-            JSON.stringify(registros)
-        );
+        const { error } = await _supabase
+            .from('registros_pa')
+            .delete()
+            .eq('id', id);
 
+        if (error) {
+            alert("Erro ao excluir do banco: " + error.message);
+        } else {
+            await carregarDados();
+        }
     }
 
     function mostrarPA() {
-
-        const tabela =
-            document.getElementById("listaPA");
-
-        const pesquisa =
-            document.getElementById("pesquisa")
-            .value
-            .toUpperCase();
+        const tabela = document.getElementById("listaPA");
+        const pesquisa = document.getElementById("pesquisa").value.toUpperCase();
 
         tabela.innerHTML = "";
 
-        const filtrados = registros.filter(pa =>
-            pa.includes(pesquisa)
+        const filtrados = registrosCache.filter(item =>
+            item.numero_pa.includes(pesquisa)
         );
 
         document.getElementById("contador").innerText =
-            "Total de P.A registrados: " + registros.length;
+            "Total de P.A registrados: " + registrosCache.length;
 
         if (filtrados.length === 0) {
-
             tabela.innerHTML = `
                 <tr>
                     <td colspan="3" class="vazio">
@@ -296,50 +279,35 @@
                     </td>
                 </tr>
             `;
-
             return;
         }
 
-        filtrados.forEach((pa) => {
-
-            const index = registros.indexOf(pa);
-
+        filtrados.forEach((item, index) => {
             tabela.innerHTML += `
                 <tr>
                     <td>${index + 1}</td>
-
-                    <td>
-                        <strong>${pa}</strong>
-                    </td>
-
+                    <td><strong>${item.numero_pa}</strong></td>
                     <td>
                         <button
                             class="btn-delete"
-                            onclick="excluirPA(${index})"
+                            onclick="excluirPA('${item.id}')"
                         >
                             Excluir
                         </button>
                     </td>
                 </tr>
             `;
-
         });
-
     }
 
-    // Permitir cadastrar apertando ENTER
-    document.getElementById("numeroPA")
-        .addEventListener("keypress", function(event) {
+    document.getElementById("numeroPA").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            adicionarPA();
+        }
+    });
 
-            if (event.key === "Enter") {
-                adicionarPA();
-            }
-
-        });
-
-    // Carrega os registros ao abrir
-    mostrarPA();
-
+    // Inicializa os dados vindos do Supabase ao abrir a página
+    carregarDados();
 </script>
 
 </body>
