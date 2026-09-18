@@ -8,6 +8,10 @@
     <!-- CDN do Client Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 
+    <!-- CDNs para Gerar PDF (jsPDF + autoTable) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -85,6 +89,7 @@
             padding: 13px 20px;
             cursor: pointer;
             font-size: 15px;
+            font-weight: bold;
         }
 
         .btn-add {
@@ -96,9 +101,24 @@
             background: #1d4ed8;
         }
 
-        .search {
+        .btn-pdf {
+            background: #059669;
+            color: white;
             width: 100%;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-pdf:hover {
+            background: #047857;
+        }
+
+        .search {
+            width: 100%;
+            margin-bottom: 15px;
         }
 
         table {
@@ -126,6 +146,7 @@
             background: #dc2626;
             color: white;
             padding: 7px 12px;
+            font-weight: normal;
         }
 
         .btn-delete:hover {
@@ -195,6 +216,10 @@
             placeholder="Pesquisar P.A..."
             onkeyup="mostrarPA()"
         >
+
+        <button class="btn-pdf" onclick="gerarPDF()">
+            📄 Baixar Relatório em PDF
+        </button>
 
         <div class="contador" id="contador">Carregando dados...</div>
 
@@ -281,15 +306,16 @@
         }
     }
 
+    function obterRegistrosFiltrados() {
+        const pesquisa = document.getElementById("pesquisa").value.toUpperCase();
+        return registrosCache.filter(item => item.numero_pa.includes(pesquisa));
+    }
+
     function mostrarPA() {
         const tabela = document.getElementById("listaPA");
-        const pesquisa = document.getElementById("pesquisa").value.toUpperCase();
+        const filtrados = obterRegistrosFiltrados();
 
         tabela.innerHTML = "";
-
-        const filtrados = registrosCache.filter(item =>
-            item.numero_pa.includes(pesquisa)
-        );
 
         // Atualiza o total de máquinas no topo
         document.getElementById("totalMaquinas").innerText = registrosCache.length;
@@ -325,6 +351,46 @@
                 </tr>
             `;
         });
+    }
+
+    function gerarPDF() {
+        const filtrados = obterRegistrosFiltrados();
+
+        if (filtrados.length === 0) {
+            alert("Não há registros para exportar em PDF.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Título e cabeçalho do documento
+        doc.setFontSize(18);
+        doc.text("Relatório de Registro de P.A", 14, 20);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 14, 28);
+        doc.text(`Total de registros: ${filtrados.length}`, 14, 34);
+
+        // Prepara os dados da tabela
+        const dadosTabela = filtrados.map((item, index) => [
+            index + 1,
+            item.numero_pa
+        ]);
+
+        // Adiciona a tabela usando o autoTable
+        doc.autoTable({
+            startY: 40,
+            head: [['Nº', 'Identificação P.A']],
+            body: dadosTabela,
+            theme: 'grid',
+            headStyles: { fillColor: [31, 41, 55] },
+            styles: { fontSize: 10, cellPadding: 3 }
+        });
+
+        // Faz o download do arquivo
+        doc.save(`relatorio_pa_${new Date().toISOString().slice(0, 10)}.pdf`);
     }
 
     document.getElementById("numeroPA").addEventListener("keypress", function(event) {
