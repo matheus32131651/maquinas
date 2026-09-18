@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de P.A</title>
+    <title>Registro de Número de Série</title>
 
     <!-- CDN do Client Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
@@ -179,7 +179,7 @@
 <body>
 
 <header>
-    <h1>Registro de P.A</h1>
+    <h1>Registro de Número de Série</h1>
     <p>Controle de numeração das máquinas</p>
 </header>
 
@@ -192,13 +192,13 @@
     </div>
 
     <div class="card">
-        <h2>Cadastrar P.A</h2>
+        <h2>Cadastrar Número de Série</h2>
         <br>
         <div class="form">
             <input
                 type="text"
                 id="numeroPA"
-                placeholder="Ex: P.A 01 ou P.A 014"
+                placeholder="Ex: NS 01 ou NS 014"
             >
             <button class="btn-add" onclick="adicionarPA()">
                 Adicionar
@@ -213,7 +213,7 @@
             class="search"
             type="text"
             id="pesquisa"
-            placeholder="Pesquisar P.A..."
+            placeholder="Pesquisar Número de Série..."
             onkeyup="mostrarPA()"
         >
 
@@ -227,7 +227,7 @@
             <thead>
                 <tr>
                     <th>Nº</th>
-                    <th>P.A</th>
+                    <th>Número de Série</th>
                     <th>Ação</th>
                 </tr>
             </thead>
@@ -268,13 +268,13 @@
         let numero = campo.value.trim().toUpperCase();
 
         if (numero === "") {
-            alert("Digite o número do P.A.");
+            alert("Digite o número de série.");
             return;
         }
 
         const existe = registrosCache.some(item => item.numero_pa === numero);
         if (existe) {
-            alert("Esse P.A já está registrado.");
+            alert("Esse número de série já está registrado.");
             return;
         }
 
@@ -291,7 +291,7 @@
     }
 
     async function excluirPA(id) {
-        const confirmacao = confirm("Deseja realmente excluir este P.A?");
+        const confirmacao = confirm("Deseja realmente excluir este número de série?");
         if (!confirmacao) return;
 
         const { error } = await _supabase
@@ -328,7 +328,7 @@
             tabela.innerHTML = `
                 <tr>
                     <td colspan="3" class="vazio">
-                        Nenhum P.A encontrado.
+                        Nenhum número de série encontrado.
                     </td>
                 </tr>
             `;
@@ -366,7 +366,7 @@
 
         // Título e cabeçalho do documento
         doc.setFontSize(18);
-        doc.text("Relatório de Registro de P.A", 14, 20);
+        doc.text("Relatório de Registro de Número de Série", 14, 20);
 
         doc.setFontSize(11);
         doc.setTextColor(100);
@@ -382,7 +382,7 @@
         // Adiciona a tabela usando o autoTable
         doc.autoTable({
             startY: 40,
-            head: [['Nº', 'Identificação P.A']],
+            head: [['Nº', 'Número de Série']],
             body: dadosTabela,
             theme: 'grid',
             headStyles: { fillColor: [31, 41, 55] },
@@ -390,7 +390,7 @@
         });
 
         // Faz o download do arquivo
-        doc.save(`relatorio_pa_${new Date().toISOString().slice(0, 10)}.pdf`);
+        doc.save(`relatorio_numeros_serie_${new Date().toISOString().slice(0, 10)}.pdf`);
     }
 
     document.getElementById("numeroPA").addEventListener("keypress", function(event) {
